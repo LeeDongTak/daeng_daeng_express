@@ -3,4 +3,5 @@ const { jwtMiddleware } = require('../../jwtMiddlewhare');
 
 exports.indexRouter = function (app) {
   app.get('/post/All/:pageNum', indexController.readPost);
+  app.get('/post/:postId', indexController.readPostDetail);
 };
