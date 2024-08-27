@@ -30,14 +30,31 @@ exports.selectPost = async function (pageNum) {
       const offset = (pageNum - 1) * 16;
       const [row] = await connection.query(
         `
-            SELECT p.*, pc.*
+            SELECT p.*,
+             JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'id', u.id,
+                  'postId', u.postId,
+                  'image', u.image
+                )
+              ) AS images,
+              JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'id', pc.id,
+                  'category', pc.category,
+                  'postId', pc.postId
+                )
+              ) AS postcategory
             FROM post p
             LEFT JOIN postcategory pc ON p.id = pc.postId
+            LEFT JOIN upload u ON p.id = u.postId
             WHERE p.deletedAt IS NULL
+            GROUP BY p.id
             LIMIT 16 OFFSET ?
         `,
         [offset],
       );
+      console.log(row);
       return row;
     } catch (err) {
       console.error(`### selectTodoByType Query error ### \n ${err}`);
@@ -57,17 +74,37 @@ exports.selectPostDetail = async function (postId) {
     const connection = await pool.getConnection(async conn => conn);
 
     const makeSQLQuery = (table, column) => {
-      return ` SELECT ${column} FROM ${table} WHERE ${table}.${table === 'post' ? 'id' : 'postId'} = ?`;
+      return;
     };
     try {
       // 쿼리
-      const [data] = await connection.query(makeSQLQuery('post', '*'), [postId]);
-      const [postcategory] = await connection.query(makeSQLQuery('postcategory', 'id, category'), [postId]);
-      const [images] = await connection.query(makeSQLQuery('upload', 'id, image'), [postId]);
+      const [data] = await connection.query(
+        `
+           SELECT p.*,
+             JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'id', u.id,
+                  'postId', u.postId,
+                  'image', u.image
+                )
+              ) AS images,
+              JSON_ARRAYAGG(
+                JSON_OBJECT(
+                  'id', pc.id,
+                  'category', pc.category,
+                  'postId', pc.postId
+                )
+              ) AS postcategory
+            FROM post p
+            LEFT JOIN postcategory pc ON p.id = pc.postId
+            LEFT JOIN upload u ON p.id = u.postId
+            WHERE P.id = ?
+            GROUP BY p.id
+          `,
+        [postId],
+      );
 
-      const postDetailData = { ...data[0], postcategory, images };
-      console.log(postDetailData, '/2323/');
-      return postDetailData;
+      return data[0];
     } catch (err) {
       console.error(`### selectTodoByType Query error ### \n ${err}`);
       return false;
