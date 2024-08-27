@@ -98,7 +98,7 @@ exports.selectPostDetail = async function (postId) {
             FROM post p
             LEFT JOIN postcategory pc ON p.id = pc.postId
             LEFT JOIN upload u ON p.id = u.postId
-            WHERE P.id = ?
+            WHERE p.id = ?
             GROUP BY p.id
           `,
         [postId],
